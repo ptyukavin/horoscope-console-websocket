@@ -7,5 +7,5 @@ export default function AuthenticatorWrapper({
 }: {
   children: React.ReactNode;
 }) {
-  return <Authenticator>{children}</Authenticator>;
+  return <Authenticator hideSignUp={true}>{children}</Authenticator>;
 }
