@@ -1,3 +1,4 @@
+// amplify/custom/websocket/resource.ts
 import {
   WebSocketApi,
   WebSocketStage,
@@ -11,69 +12,81 @@ import { CfnOutput } from "aws-cdk-lib";
 export const websocket = (backend: any) => {
   const websocketStack = backend.createStack("websocket-stack");
 
-  // Connection table to store active connections
+  // Connection table
   const connectionTable = new Table(websocketStack, "ConnectionTable", {
     partitionKey: { name: "connectionId", type: AttributeType.STRING },
   });
 
-  // Connect handler
   const connectHandler = new Function(websocketStack, "ConnectHandler", {
-    runtime: Runtime.NODEJS_18_X,
-    handler: "connect.handler",
+    runtime: Runtime.NODEJS_20_X,
+    handler: "index.handler",
     code: Code.fromInline(`
-      const { DynamoDB } = require('@aws-sdk/client-dynamodb');
-      const ddb = new DynamoDB();
+    const { DynamoDBClient, PutItemCommand } = require('@aws-sdk/client-dynamodb');
+    const client = new DynamoDBClient();
+    
+    exports.handler = async (event) => {
+      console.log('Connect:', event.requestContext.connectionId);
       
-      exports.handler = async (event) => {
-        await ddb.putItem({
-          TableName: process.env.CONNECTION_TABLE,
-          Item: { connectionId: { S: event.requestContext.connectionId } }
-        });
-        return { statusCode: 200 };
-      };
-    `),
+      const command = new PutItemCommand({
+        TableName: process.env.CONNECTION_TABLE,
+        Item: { connectionId: { S: event.requestContext.connectionId } }
+      });
+      
+      await client.send(command);
+      return { statusCode: 200 };
+    };
+  `),
     environment: {
       CONNECTION_TABLE: connectionTable.tableName,
     },
   });
 
-  // Disconnect handler
   const disconnectHandler = new Function(websocketStack, "DisconnectHandler", {
-    runtime: Runtime.NODEJS_18_X,
-    handler: "disconnect.handler",
+    runtime: Runtime.NODEJS_20_X,
+    handler: "index.handler",
     code: Code.fromInline(`
-      const { DynamoDB } = require('@aws-sdk/client-dynamodb');
-      const ddb = new DynamoDB();
+    const { DynamoDBClient, DeleteItemCommand } = require('@aws-sdk/client-dynamodb');
+    const client = new DynamoDBClient();
+    
+    exports.handler = async (event) => {
+      console.log('Disconnect:', event.requestContext.connectionId);
       
-      exports.handler = async (event) => {
-        await ddb.deleteItem({
-          TableName: process.env.CONNECTION_TABLE,
-          Key: { connectionId: { S: event.requestContext.connectionId } }
-        });
-        return { statusCode: 200 };
-      };
-    `),
+      const command = new DeleteItemCommand({
+        TableName: process.env.CONNECTION_TABLE,
+        Key: { connectionId: { S: event.requestContext.connectionId } }
+      });
+      
+      await client.send(command);
+      return { statusCode: 200 };
+    };
+  `),
     environment: {
       CONNECTION_TABLE: connectionTable.tableName,
     },
   });
 
+  // Grant permissions
   connectionTable.grantReadWriteData(connectHandler);
   connectionTable.grantReadWriteData(disconnectHandler);
 
-  const api = new WebSocketApi(websocketStack, "WebSocketApi", {
-    connectRouteOptions: {
-      integration: new WebSocketLambdaIntegration(
-        "ConnectIntegration",
-        connectHandler
-      ),
-    },
-    disconnectRouteOptions: {
-      integration: new WebSocketLambdaIntegration(
-        "DisconnectIntegration",
-        disconnectHandler
-      ),
-    },
+  const api = new WebSocketApi(websocketStack, "WebSocketApi");
+
+  new WebSocketRoute(websocketStack, "ConnectRoute", {
+    webSocketApi: api,
+    routeKey: "$connect",
+    integration: new WebSocketLambdaIntegration(
+      "ConnectIntegration",
+      connectHandler
+    ),
+  });
+
+  new WebSocketRoute(websocketStack, "DisconnectRoute", {
+    webSocketApi: api,
+    routeKey: "$disconnect",
+    integration: new WebSocketLambdaIntegration(
+      "DisconnectIntegration",
+      disconnectHandler
+    ),
   });
 
   const stage = new WebSocketStage(websocketStack, "prod", {
