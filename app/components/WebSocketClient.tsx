@@ -9,6 +9,8 @@ export default function WebSocketClient() {
   const [error, setError] = useState<string>("");
 
   useEffect(() => {
+    let websocket: WebSocket | null = null;
+
     // Import outputs dynamically to avoid build issues
     import("@/amplify_outputs.json").then((outputs) => {
       const websocketUrl = (outputs as any).custom?.websocketEndpoint;
@@ -18,7 +20,7 @@ export default function WebSocketClient() {
       }
 
       console.log("Connecting to:", websocketUrl);
-      const websocket = new WebSocket(websocketUrl);
+      websocket = new WebSocket(websocketUrl);
 
       websocket.onopen = () => {
         console.log("WebSocket connected");
@@ -43,20 +45,48 @@ export default function WebSocketClient() {
         setError("Connection error");
       };
     });
-  }, []);
+
+    // Cleanup function
+    return () => {
+      if (websocket) {
+        console.log("Cleaning up WebSocket connection");
+        websocket.close();
+      }
+    };
+  }, []); // Empty dependency array
 
   return (
-    <div>
+    <div style={{ maxWidth: "800px", margin: "0 auto", padding: "20px" }}>
       <h2>Real-time Updates (WebSocket)</h2>
       <div>Status: {ws ? "Connected" : "Disconnected"}</div>
       {error && <div style={{ color: "red" }}>Error: {error}</div>}
-      <ul>
+      <div>
         {messages.map((msg, i) => (
-          <li key={i}>
-            {msg.eventName}: {JSON.stringify(msg.data)} at {msg.timestamp}
-          </li>
+          <div
+            key={i}
+            style={{
+              border: "1px solid #ccc",
+              margin: "10px 0",
+              padding: "10px",
+              borderRadius: "8px",
+            }}
+          >
+            <h3>{msg.eventName} Event</h3>
+            <p>
+              <strong>ID:</strong> {msg.data?.id?.S}
+            </p>
+            <p>
+              <strong>Title:</strong> {msg.data?.title?.S}
+            </p>
+            <p>
+              <strong>Description:</strong> {msg.data?.description?.S}
+            </p>
+            <p>
+              <small>Time: {msg.timestamp}</small>
+            </p>
+          </div>
         ))}
-      </ul>
+      </div>
     </div>
   );
 }
