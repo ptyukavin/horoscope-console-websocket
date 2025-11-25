@@ -11,49 +11,43 @@ export default function WebSocketClient() {
   useEffect(() => {
     let websocket: WebSocket | null = null;
 
-    // Import outputs dynamically to avoid build issues
-    import("@/amplify_outputs.json").then((outputs) => {
-      const websocketUrl = (outputs as any).custom?.websocketEndpoint;
-      if (!websocketUrl) {
-        console.error("WebSocket endpoint not found in outputs");
-        return;
-      }
+    // Replace with your SAM WebSocket endpoint
+    const websocketUrl =
+      "wss://l8ixwptdcd.execute-api.eu-central-1.amazonaws.com/prod";
 
-      console.log("Connecting to:", websocketUrl);
-      websocket = new WebSocket(websocketUrl);
+    console.log("Connecting to:", websocketUrl);
+    websocket = new WebSocket(websocketUrl);
 
-      websocket.onopen = () => {
-        console.log("WebSocket connected");
-        setWs(websocket);
-        setError("");
-      };
+    websocket.onopen = () => {
+      console.log("WebSocket connected");
+      setWs(websocket);
+      setError("");
+    };
 
-      websocket.onmessage = (event) => {
-        const message = JSON.parse(event.data);
-        console.log("Received:", message);
-        setMessages((prev) => [...prev, message]);
-      };
+    websocket.onmessage = (event) => {
+      const message = JSON.parse(event.data);
+      console.log("Received:", message);
+      setMessages((prev) => [...prev, message]);
+    };
 
-      websocket.onclose = (event) => {
-        console.log("WebSocket disconnected", event.code, event.reason);
-        setError(`Disconnected: ${event.code} ${event.reason}`);
-        setWs(null);
-      };
+    websocket.onclose = (event) => {
+      console.log("WebSocket disconnected", event.code, event.reason);
+      setError(`Disconnected: ${event.code} ${event.reason}`);
+      setWs(null);
+    };
 
-      websocket.onerror = (event) => {
-        console.error("WebSocket error:", event);
-        setError("Connection error");
-      };
-    });
+    websocket.onerror = (event) => {
+      console.error("WebSocket error:", event);
+      setError("Connection error");
+    };
 
-    // Cleanup function
     return () => {
       if (websocket) {
         console.log("Cleaning up WebSocket connection");
         websocket.close();
       }
     };
-  }, []); // Empty dependency array
+  }, []);
 
   return (
     <div style={{ maxWidth: "800px", margin: "0 auto", padding: "20px" }}>
