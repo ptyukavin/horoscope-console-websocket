@@ -5,6 +5,9 @@ import { useEffect, useState } from "react";
 
 export default function WebSocketClient() {
   const [messages, setMessages] = useState<any[]>([]);
+  const [episodes, setEpisodes] = useState<any[]>([]);
+  const [newEpisodeTitle, setNewEpisodeTitle] = useState<string>("");
+  const [newEpisodeId, setNewEpisodeId] = useState<string>("");
   const [ws, setWs] = useState<WebSocket | null>(null);
   const [error, setError] = useState<string>("");
 
@@ -26,6 +29,15 @@ export default function WebSocketClient() {
 
     websocket.onmessage = (event) => {
       const message = JSON.parse(event.data);
+      // message is an object with list of episodes and an object newEpisode with id and title
+      if (message.episodes) {
+        setEpisodes(message.episodes);
+      }
+      if (message.newEpisode) {
+        setNewEpisodeId(message.newEpisode.id);
+        setNewEpisodeTitle(message.newEpisode.title);
+      }
+
       console.log("Received:", message);
       setMessages((prev) => [...prev, message]);
     };
@@ -55,7 +67,7 @@ export default function WebSocketClient() {
       <div>Status: {ws ? "Connected" : "Disconnected"}</div>
       {error && <div style={{ color: "red" }}>Error: {error}</div>}
       <div>
-        {messages.map((msg, i) => (
+        {episodes.map((episode, i) => (
           <div
             key={i}
             style={{
@@ -65,18 +77,12 @@ export default function WebSocketClient() {
               borderRadius: "8px",
             }}
           >
-            <h3>{msg.eventName} Event</h3>
+            <h3>{episode.title} Event</h3>
             <p>
-              <strong>ID:</strong> {msg.data?.id?.S}
+              <strong>ID:</strong> {episode.id}
             </p>
             <p>
-              <strong>Title:</strong> {msg.data?.title?.S}
-            </p>
-            <p>
-              <strong>Description:</strong> {msg.data?.description?.S}
-            </p>
-            <p>
-              <small>Time: {msg.timestamp}</small>
+              <strong>Title:</strong> {episode.title}
             </p>
           </div>
         ))}

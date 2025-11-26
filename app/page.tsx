@@ -9,42 +9,30 @@ import WebSocketClient from "./components/WebSocketClient";
 const client = generateClient<Schema>();
 
 export default function App() {
-  const [todos, setTodos] = useState<Array<Schema["Todo"]["type"]>>([]);
+  const [episodes, setEpisodes] = useState<
+    Array<Schema["CurrentEpisodes"]["type"]>
+  >([]);
 
   const { signOut } = useAuthenticator();
 
-  function listTodos() {
-    client.models.Todo.observeQuery().subscribe({
-      next: (data) => setTodos([...data.items]),
+  function listEpisodes() {
+    client.models.CurrentEpisodes.observeQuery().subscribe({
+      next: (data) => setEpisodes([...data.items]),
     });
   }
 
   useEffect(() => {
-    listTodos();
+    listEpisodes();
   }, []);
-
-  function createTodo() {
-    client.models.Todo.create({
-      content: window.prompt("Todo content"),
-    });
-  }
 
   return (
     <main>
-      <h1>My todos</h1>
-      <button onClick={createTodo}>+ new</button>
+      <h1>Current Episodes</h1>
       <ul>
-        {todos.map((todo) => (
-          <li key={todo.id}>{todo.content}</li>
+        {episodes.map((episode) => (
+          <li key={episode.id}>{episode.title}</li>
         ))}
       </ul>
-      <div>
-        🥳 App successfully hosted. Try creating a new todo.
-        <br />
-        <a href="https://docs.amplify.aws/nextjs/start/quickstart/nextjs-app-router-client-components/">
-          Review next steps of this tutorial.
-        </a>
-      </div>
       <button onClick={signOut}>Sign Out</button>
       <WebSocketClient />
     </main>
