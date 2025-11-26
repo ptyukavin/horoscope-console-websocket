@@ -13,7 +13,7 @@ export default function WebSocketClient() {
 
     // Replace with your SAM WebSocket endpoint
     const websocketUrl =
-      "wss://l8ixwptdcd.execute-api.eu-central-1.amazonaws.com/prod";
+      "wss://qi45jx1pr1.execute-api.eu-central-1.amazonaws.com/prod";
 
     console.log("Connecting to:", websocketUrl);
     websocket = new WebSocket(websocketUrl);
