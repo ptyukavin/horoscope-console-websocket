@@ -15,24 +15,29 @@ export default function App() {
 
   const { signOut } = useAuthenticator();
 
-  function listEpisodes() {
-    client.models.CurrentEpisodes.observeQuery().subscribe({
-      next: (data) => setEpisodes([...data.items]),
-    });
-  }
-
   useEffect(() => {
-    listEpisodes();
+    const sub = client.models.CurrentEpisodes.observeQuery().subscribe({
+      next: ({ items, isSynced }) => setEpisodes([...items]),
+    });
+    return () => {
+      sub.unsubscribe();
+    };
   }, []);
 
   return (
     <main>
       <h1>Current Episodes</h1>
       <ul>
-        {episodes.map((episode) => (
-          <li key={episode.id}>{episode.title}</li>
-        ))}
+        {episodes
+          .filter((episode) => episode !== null && episode !== undefined)
+          .map(
+            (episode) => (
+              console.log("EPISODE >> ", episode),
+              (<li key={episode.id}>{episode.title}</li>)
+            )
+          )}
       </ul>
+
       <button onClick={signOut}>Sign Out</button>
       <WebSocketClient />
     </main>

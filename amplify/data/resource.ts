@@ -3,8 +3,7 @@ import { type ClientSchema, a, defineData } from "@aws-amplify/backend";
 const schema = a.schema({
   CurrentEpisodes: a
     .model({
-      id: a.string(),
-      title: a.string(),
+      title: a.string().required(),
     })
     .authorization((allow) => [allow.publicApiKey()]),
 });
